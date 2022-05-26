@@ -1,36 +1,7 @@
 import numpy
 import matplotlib
 import matplotlib.pyplot as plt
-
-
-def mcol(v):
-    return v.reshape((v.size, 1))
-
-
-def get_labels(name):
-    hLabels = {
-        '0': 0,
-        '1': 1
-    }
-    return hLabels[name]
-
-
-def load(file_name):
-    DList = []
-    labelsList = []
-
-    with open(file_name) as f:
-        for line in f:
-            try:
-                attrs = line.split(',')[0:8]
-                attrs = mcol(numpy.array([float(i) for i in attrs]))
-                name = line.split(',')[-1].strip()
-                label = get_labels(name)
-                DList.append(attrs)
-                labelsList.append(label)
-            except:
-                pass
-    return numpy.hstack(DList), numpy.array(labelsList, dtype=numpy.int32)
+from load import load_data
 
 
 def plot_hist(D, L):
@@ -59,7 +30,7 @@ def plot_hist(D, L):
 
         plt.legend()
         plt.tight_layout()  # Use with non-default font size to keep axis label inside the figure
-        plt.savefig('hist_%d.pdf' % dIdx)
+        plt.savefig('plots/hist_%d.pdf' % dIdx)
     plt.show()
 
 
@@ -91,7 +62,7 @@ def plot_scatter(D, L):
 
             plt.legend()
             plt.tight_layout()  # Use with non-default font size to keep axis label inside the figure
-            plt.savefig('scatter_%d_%d.pdf' % (dIdx1, dIdx2))
+            plt.savefig('plots/scatter_%d_%d.pdf' % (dIdx1, dIdx2))
         plt.show()
 
 def plot_data(D, L):
@@ -104,40 +75,11 @@ def plot_data(D, L):
     plot_scatter(D, L)
 
 
-def calculate_pca(D, L):
-
-    # calculate and reshape the mean
-    mu = D.mean(1)
-    mu = mcol(mu)
-    # center the data
-    DC = D - mu
-    # calculate covariance matrix
-    C = (DC @ DC.T)/DC.shape[1]
-    # compute eigen values and eigen vectors
-    s, U = numpy.linalg.eigh(C)
-    # compute principal components
-    P = U[:, ::-1][:, 0:2]
-    # project the data
-    DP = numpy.dot(P.T, D)
-    show_pca(DP, L)
-
-
-def show_pca(D, L):
-    D0 = D[:, L == 0]
-    D1 = D[:, L == 1]
-
-    plt.scatter(D0[0, :], D0[1, :], label='Setosa')
-    plt.scatter(D1[0, :], D1[1, :], label='Versicolor')
-
-    plt.show()
-
-
-def main():
-    D, L = load('Train.txt')
+def plot():
+    D, L = load_data()
     print(D.shape, L.shape)
-    # plot_data(D, L)
-    calculate_pca(D, L)
+    plot_data(D, L)
 
 
 if __name__ == '__main__':
-    main()
+    plot()

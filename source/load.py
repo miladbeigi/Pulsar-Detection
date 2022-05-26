@@ -15,7 +15,7 @@ def get_labels(name):
     return hLabels[name]
 
 
-def load(file_name):
+def open_file(file_name):
     DList = []
     labelsList = []
 
@@ -33,9 +33,10 @@ def load(file_name):
     return numpy.hstack(DList), numpy.array(labelsList, dtype=numpy.int32)
 
 
-def main():
-    D, L = load('Train.txt')
+def load_data():
+    D, L = open_file('data/Train.txt')
+    return D, L
 
 
 if __name__ == '__main__':
-    main()
+    load_data()
