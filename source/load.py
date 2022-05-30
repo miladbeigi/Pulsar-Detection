@@ -1,10 +1,7 @@
 import numpy
 import matplotlib
 import matplotlib.pyplot as plt
-
-
-def mcol(v):
-    return v.reshape((v.size, 1))
+from misc import mcol
 
 
 def get_labels(name):
@@ -34,7 +31,7 @@ def open_file(file_name):
 
 
 def load_data():
-    D, L = open_file('data/Train.txt')
+    D, L = open_file('/Users/milad/Library/Mobile Documents/com~apple~CloudDocs/ML/Project/Pulsar/data/Train.txt')
     return D, L
 
 

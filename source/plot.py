@@ -77,7 +77,6 @@ def plot_data(D, L):
 
 def plot():
     D, L = load_data()
-    print(D.shape, L.shape)
     plot_data(D, L)
 
 
