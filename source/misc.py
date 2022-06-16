@@ -1,8 +1,12 @@
 import numpy as np
+from sklearn.model_selection import KFold
+
 
 def vrow(v):
     return v.reshape((1, v.size))
 
+def mcol(v):
+    return v.reshape((v.size, 1))
 
 def empirical_mean(X: np.array):
     return mcol(X.mean(1))
@@ -29,5 +33,6 @@ def split_db_2to1(D, L, seed=0):
     LTE = L[idxTest]
     return (DTR, LTR), (DTE, LTE)
 
-def mcol(v):
-    return v.reshape((v.size, 1))
+
+def k_fold(K):
+    return KFold(n_splits=K, random_state=1, shuffle=True)

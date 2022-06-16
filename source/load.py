@@ -2,6 +2,7 @@ import numpy
 import matplotlib
 import matplotlib.pyplot as plt
 from misc import mcol
+import constants
 
 
 def get_labels(name):
@@ -31,7 +32,7 @@ def open_file(file_name):
 
 
 def load_data():
-    D, L = open_file('/Users/milad/Library/Mobile Documents/com~apple~CloudDocs/ML/Project/Pulsar/data/Train.txt')
+    D, L = open_file(f'{constants.PWD}/data/Train.txt')
     return D, L
 
 
