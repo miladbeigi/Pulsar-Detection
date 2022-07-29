@@ -31,8 +31,8 @@ def open_file(file_name):
     return numpy.hstack(DList), numpy.array(labelsList, dtype=numpy.int32)
 
 
-def load_data():
-    D, L = open_file(f'{constants.PWD}/data/Train.txt')
+def load_data(filename='Train'):
+    D, L = open_file(f'{constants.PWD}/data/{filename}.txt')
     return D, L
 
 

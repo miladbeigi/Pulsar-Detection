@@ -87,7 +87,7 @@ def train_SVM(DTR, LTR, DTE, LTE, Weighted_C_list, gamma, C=1, K=0, kernel_type=
     return STE
 
 
-def svm_model(D, L, applications, K, C_list, prior, rebalanced, kernel_type=None):
+def svm_model(D, L, applications, K, C_list, G_list, prior, rebalanced, kernel_type=None):
 
     np.random.seed(seed=0)
     random_index_list = np.random.permutation(D.shape[1])
@@ -100,40 +100,42 @@ def svm_model(D, L, applications, K, C_list, prior, rebalanced, kernel_type=None
         'labels': []
     }
     minDCF = {}
-    for app in applications:
-        minDCF[app] = []
+    
+    for gamma in G_list:
+        minDCF[gamma] = []
+    
+    for gamma in G_list:
+        for C in C_list:
+            K_scores['labels'] = []
+            K_scores['scores'] = []
+            for train_index, test_index in kf.split(R_D.T):
 
-    for C in C_list:
-        K_scores['labels'] = []
-        K_scores['scores'] = []
-        for train_index, test_index in kf.split(R_D.T):
+                DTR = R_D[:, train_index]
+                LTR = R_L[train_index]
 
-            DTR = R_D[:, train_index]
-            LTR = R_L[train_index]
+                DTE = R_D[:, test_index]
+                LTE = R_L[test_index]
 
-            DTE = R_D[:, test_index]
-            LTE = R_L[test_index]
+                Weighted_C_list = compute_weights(LTR, prior, C, rebalanced)
 
-            Weighted_C_list = compute_weights(LTR, prior, C, rebalanced)
+                STE = train_SVM(
+                    DTR, LTR, DTE, LTE, Weighted_C_list, gamma, C=C, K=0, kernel_type=kernel_type)
 
-            STE = train_SVM(
-                DTR, LTR, DTE, LTE, Weighted_C_list, gamma=0.001, C=C, K=0, kernel_type=kernel_type)
+                K_scores['labels'].append(LTE)
+                K_scores['scores'].append(STE)
 
-            K_scores['labels'].append(LTE)
-            K_scores['scores'].append(STE)
+            STE = np.hstack(K_scores['scores'])
+            LTE = np.hstack(K_scores['labels'])
 
-        STE = np.hstack(K_scores['scores'])
-        LTE = np.hstack(K_scores['labels'])
-
-        for app in applications:
-            _minDCF = compute_min_DCF(STE, LTE, app, 1, 1)
-            print(f"prior={prior}, app={app}, C={C}, MinDCF: ", _minDCF)
-            minDCF[app].append(_minDCF)
+            for app in applications:
+                _minDCF = compute_min_DCF(STE, LTE, app, 1, 1)
+                print(f"prior={prior}, app={app}, C={C}, gamma={gamma}, MinDCF: ", _minDCF)
+                minDCF[gamma].append(_minDCF)
 
     plt.figure()
 
-    for app in applications:
-        plt.plot(C_list, np.array(minDCF[app]), label=f'minDCF(π={app})')
+    for gamma in G_list:
+        plt.plot(C_list, np.array(minDCF[gamma]), label=f'gamma={gamma}')
 
     plt.xscale('log')
     plt.xlabel('C')
@@ -161,45 +163,21 @@ def compute_weights(LTR, prior, C, rebalanced):
     return Weighted_C_list
 
 
-def svm_evaluation(DTR, LTR, DTE, LTE, gamma, prior, imbalanced, C=1, K=0, kernel_type=None):
-
-    Weighted_C_list = compute_weights(LTR, prior, C, rebalanced)
-
-    STE = train_SVM(DTR, LTR, DTE, LTE, Weighted_C_list,
-                    gamma, C=1, K=0, kernel_type=None)
-
-    for app in [0.1, 0.5, 0.9]:
-        _minDCF = compute_min_DCF(STE, LTE, app, 1, 1)
-        print(f"prior={prior}, app={app}, C={C}, MinDCF: ", _minDCF)
-
-
 if __name__ == '__main__':
 
-    Train_D, Train_L = load_data('Train')
-    Evaluation_D, Evaluation_L = load_data('Test')
+    D, L = load_data()
 
-    D = np.concatenate([Train_D, Evaluation_D], axis=1)
+    D = D[:, 0:2000]
+    L = L[0:2000]
 
-    # Using gaussianized data
-    # D = gaussianization(D)
+    rebalanced = False
+    C_list = [10**-2, 10**-1, 1, 10, 100, 1000]
+    # C_list = [1000]
 
-    # Using PCA
-    # D = calculate_pca(D, 7)
-
-    Train_D = D[:, 0:8929]
-    Evaluation_D = D[:, 8929:]
-
-    rebalanced = True
-
-    # C_list = [10**-2, 10**-1, 1, 10, 100]
-    C_list = [100]
-
-    applications = [0.5, 0.1, 0.9]
+    G_list = [10**-3, 10**-2, 10**-1]
+    applications = [0.5]
     K = 3
     prior = 0.5
 
-    # svm_model(Train_D, Train_L, applications, K, C_list,
-    #           prior, rebalanced, kernel_type="rbf")
-    C = 0.1
-    svm_evaluation(Train_D, Train_L, Evaluation_D,
-                   Evaluation_L, 0.001, 0.5, True, C, 0, None)
+    svm_model(D, L, applications, K, C_list, G_list,
+              prior, rebalanced, kernel_type="rbf")

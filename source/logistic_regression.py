@@ -7,6 +7,7 @@ from model_evaluation import compute_min_DCF, compute_act_DCF, bayes_error_plot
 from scipy import special
 from load import load_data
 import pylab
+import matplotlib.pyplot as plt
 
 
 def logreg_obj_wrap_imbalanced(DTR, LTR, l, prior):
@@ -63,13 +64,19 @@ def train_logistic_regression(DTR, LTR, DTE, l, prior, imbalanced: bool):
     return STE
 
 
-def logistic_regression(D, L, applications, K, l, prior, imbalanced):
+def logistic_regression(D, L, applications, K, l_list, prior, imbalanced):
 
     # Split into two
     # (DTR, LTR), (DTE, LTE) = misc.split_db_2to1(D, L, 0)
 
     # K-Fold
     kf = misc.k_fold(K)
+    # Permutation
+    np.random.seed(seed=0)
+    random_index_list = np.random.permutation(D.shape[1])
+    R_D = D[:, random_index_list]
+    R_L = L[random_index_list]
+
 
     K_scores = {
         'scores': [],
@@ -82,14 +89,15 @@ def logistic_regression(D, L, applications, K, l, prior, imbalanced):
         minDCF[app] = []
 
     for l in l_list:
-        for train_index, test_index in kf.split(D.T):
+        K_scores['labels'] = []
+        K_scores['scores'] = []
+        for train_index, test_index in kf.split(R_D.T):
 
-            DTR = D[:, train_index]
-            LTR = L[train_index]
-
-            DTE = D[:, test_index]
-            LTE = L[test_index]
-
+            DTR = R_D[:, train_index]
+            LTR = R_L[train_index]
+            DTE = R_D[:, test_index]
+            LTE = R_L[test_index]
+            
             STE = train_logistic_regression(DTR, LTR, DTE, l, prior, imbalanced)
 
             K_scores['labels'].append(LTE)
@@ -97,16 +105,21 @@ def logistic_regression(D, L, applications, K, l, prior, imbalanced):
 
         STE = np.hstack(K_scores['scores'])
         LTE = np.hstack(K_scores['labels'])
-
         for app in applications:
             _minDCF = compute_min_DCF(STE, LTE, app, 1, 1)
             print(f"prior={prior}, app={app}, lambda={l}, MinDCF: ",_minDCF)
             minDCF[app].append(_minDCF)
     
+    plt.figure()
+
     for app in applications:
-        pylab.plot(l_list, np.array(minDCF[app]))
+        plt.plot(l_list, np.array(minDCF[app]) , label=f'minDCF(π={app})')
     
-    pylab.show()
+    plt.xscale('log')
+    plt.xlabel('λ')
+    plt.ylabel('DCF')
+    plt.legend()
+    plt.show()
 
 
 def bayes_plot():
@@ -132,30 +145,46 @@ def vec(x):
     x_xT = x.dot(x.T).reshape(x.size**2, order='F')
     return x_xT
 
+def lg_evaluation(Train_D, Train_L, Evaluation_D, Evaluation_L, l, prior, imbalanced):
+    STE = train_logistic_regression(Train_D, Train_L, Evaluation_D, l, prior, imbalanced)
+    LP = (STE > 0) * 1
+    lg_scores = misc.vrow(STE)
+    C_LG_S = train_logistic_regression(lg_scores, LP, lg_scores, 10**-5, 0.9, False)
+    for app in [0.5, 0.1, 0.9]:
+        print(f"prior={prior}, app={app}, lambda={l}, MinDCF: ", compute_min_DCF(STE, Evaluation_L, app, 1, 1))
+        print(f"prior={prior}, app={app}, lambda={l}, ACT DCF: ", compute_act_DCF(STE, Evaluation_L, app, 1, 1))
+        print(f"prior={prior}, app={app}, lambda={l}, ACT DCF (Calibrated): ", compute_act_DCF(C_LG_S, Evaluation_L, app, 1, 1))
 
 if __name__ == "__main__":
 
-    D, L = load_data()
+    Train_D, Train_L = load_data('Train')
+    Evaluation_D, Evaluation_L = load_data('Test')
+    
+    D = np.concatenate([Train_D, Evaluation_D], axis=1)
 
-    ## Using gaussianized data
-    # D = gaussianization(D.T)
-    # D = D.T
+    # Using gaussianized data
+    D = gaussianization(D)
 
-    ## Using Normalization and PCA before
-    # D = normalize_data(D)
-    # D = calculate_pca(D, 6)
+    # Using PCA 
+    # D = calculate_pca(D, 7)
 
     ### Quadratic
     ## First Approach
     # D = quadratic(D)
+
     ## Second Approach
     # D = np.apply_along_axis(vec, 0, D)
+    
+    Train_D = D[:, 0:8929]
+    Evaluation_D = D[:, 8929:]
+    
 
     applications = [0.5, 0.1, 0.9]
-    K = 5
-    imbalanced = True
-    l_list = [10**-5]
-    # l_list = [10**-5, 10**-4, 10**-3, 10**-2, 10**-1, 1, 10, 100, 1000, 10000]
+    K = 3
+    imbalanced = False
+    # l_list = [10**-5]
+    l_list = [10**-5, 10**-4, 10**-3, 10**-2, 10**-1, 1, 10, 100, 1000, 10000]
+    
     prior = 0.5
-
-    logistic_regression(D, L, applications, K, l_list, prior, imbalanced)
+    # lg_evaluation(Train_D, Train_L, Evaluation_D, Evaluation_L, 10**-5, prior, imbalanced)
+    logistic_regression(Train_D, Train_L, applications, K, l_list, prior, imbalanced)

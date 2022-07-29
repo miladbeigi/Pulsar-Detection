@@ -15,7 +15,7 @@ def _update_x(x: Union[np.ndarray, List]) -> np.ndarray:
 
 def gaussianization(x: np.array):
     x = _update_x(x)
-    return np.array([norm.ppf((rankdata(x_i) - 0.5) / len(x_i)) for x_i in x.T]).T
+    return np.array([norm.ppf((rankdata(x_i) - 0.5) / len(x_i)) for x_i in x])
 
 if __name__ == "__main__":
     pass

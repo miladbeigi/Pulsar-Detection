@@ -77,10 +77,29 @@ def plot_data(D, L):
     plt.rc('xtick', labelsize=16)
     plt.rc('ytick', labelsize=16)
 
-    # plot_hist(D, L)
+    plot_hist(D, L)
     # plot_scatter(D, L)
-    plot_correlation(D)
+    # plot_correlation(D)
 
+def roc_curve(scores, labels):
+    thresholds = np.array(scores)
+    thresholds.sort()
+    
+    thresholds = thresholds[400:2500]
+    
+    FPR = np.zeros(thresholds.size)
+    FNR = np.zeros(thresholds.size)
+
+    for idx , t in enumerate(thresholds):
+        Pred = np.int32(scores > t)
+        Conf = np.zeros((2,2))
+        for i in range(2):
+            for j in range(2):
+                Conf[i, j] = ((Pred==i) * (labels==j)).sum()
+        FNR[idx] = Conf[0,1] / Conf[1,1] + Conf[0,1]
+        FPR[idx] = Conf[1,1] / Conf[1,0] + Conf[0,0]
+
+    return ((FPR/labels.shape[0])*100, (FNR/labels.shape[0])*100)
 
 def plot():
     D, L = load_data()
@@ -88,7 +107,7 @@ def plot():
     # Using gaussianized data
     # D = gaussianize.gaussianization(D.T)
     # D = D.T
-
+    D = gaussianize.gaussianization(D)
     plot_data(D, L)
 
 
