@@ -14,3 +14,8 @@ hFea = {
 CLASS_LABELS = [0, 1]
 
 MVG_CLASS_PRIORS = [0.5 , 0.5]
+SVM_K = 0
+
+FMIN_L_BFGS_B_factr=10.0
+FMIN_L_BFGS_B_maxiter=100000
+FMIN_L_BFGS_B_maxfun=100000
