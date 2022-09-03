@@ -2,8 +2,8 @@ import numpy
 import matplotlib
 import matplotlib.pyplot as plt
 from sklearn import preprocessing
-from load import load_data
-from misc import mcol
+from utils.load import load_data
+from misc.misc import make_column_shape
 
 
 def get_labels(name):
@@ -19,7 +19,7 @@ def normalize_data(D):
 def calculate_pca(D, m):
     # calculate and reshape the mean
     mu = D.mean(1)
-    mu = mcol(mu)
+    mu = make_column_shape(mu)
     # center the data
     DC = D - mu
     # calculate covariance matrix
@@ -30,7 +30,7 @@ def calculate_pca(D, m):
     P = U[:, ::-1][:, 0:m]
     # project the data
     DP = numpy.dot(P.T, D)
-    return DP
+    return DP, P
 
 def show_pca(D, L):
     D0 = D[:, L == 0]

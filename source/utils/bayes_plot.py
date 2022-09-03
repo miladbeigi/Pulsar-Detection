@@ -30,7 +30,7 @@ if __name__ == '__main__':
     scores, LP = train_mvg_models(Train_D, Train_L, Evaluation_D, model_type)
     # LP = (scores > 0) * 1
     
-    C_MVG_S = train_logistic_regression(misc.vrow(scores), LP, misc.vrow(scores), 10**-5, 0.5, False)
+    C_MVG_S = train_logistic_regression(misc.make_row_shape(scores), LP, misc.make_row_shape(scores), 10**-5, 0.5, False)
     plt.plot(P, bayes_error_plot(P, scores, Evaluation_L, minCost=False), color='r', label='MVG actDCF')
     plt.plot(P, bayes_error_plot(P, scores, Evaluation_L, minCost=True), dashes=[6,2], color='r', label='MVG minDCF')
     plt.plot(P, bayes_error_plot(P, C_MVG_S, Evaluation_L, minCost=False), dashes=[1,2], color='r', label="MVG actDCF (Calibrated scores)")

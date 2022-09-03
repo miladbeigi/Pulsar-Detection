@@ -1,14 +1,7 @@
-from scipy.stats import norm, rankdata
-from cProfile import label
-from distutils.log import Log
-from doctest import testfile
-from re import S
 import numpy as np
 import misc
-from pca_lda import calculate_pca, normalize_data
-import pylab
+from pca_lda import calculate_pca
 from gaussianize import gaussianization
-from scipy import special
 from load import load_data
 from model_evaluation import compute_min_DCF, compute_act_DCF, bayes_error_plot
 from logistic_regression import train_logistic_regression
@@ -19,26 +12,26 @@ def logpdf_GAU_ND_simplified(X, mu, C):
 
 
 def ML_GAU(D):
-    mu = misc.empirical_mean(D)
-    C = misc.cov(D)
+    mu = misc.compute_mean(D)
+    C = misc.compute_covariance(D)
     return mu, C
 
 
 def ML_GAU_NAIVE(D):
-    mu = misc.empirical_mean(D)
-    C = misc.cov(D, type="naive")
+    mu = misc.compute_mean(D)
+    C = misc.compute_covariance(D, type="naive")
     return mu, C
 
 
 def ML_GAU_TIED(D, L, class_label):
-    mu = misc.empirical_mean(D[:, L == class_label])
-    C = misc.within_class_cov_matrix(D, L)
+    mu = misc.compute_mean(D[:, L == class_label])
+    C = misc.compute_within_class_covariance(D, L)
     return mu, C
 
 
 def ML_GAU_TIED_NAIVE(D, L, class_label):
-    mu = misc.empirical_mean(D[:, L == class_label])
-    C = misc.within_class_cov_matrix(D, L)
+    mu = misc.compute_mean(D[:, L == class_label])
+    C = misc.compute_within_class_covariance(D, L)
     return mu, np.diag(np.diag(C))
 
 
@@ -57,13 +50,21 @@ def compute_densities(model_parameters, DTE):
     return ll, SJoint
 
 
-def mvg_models(D, L):
+def mvg_models(D, L, K):
+    """
+    Prepares the folds for training and outputs the results for different applications.
+
+    Args:
+        D (_type_): Data
+        L (_type_): Labels
+        K (_type_): Number of folds
+    """
 
     # K-Fold
-    K = 5
     kf = misc.k_fold(K)
     np.random.seed(seed=0)
     random_index_list = np.random.permutation(D.shape[1])
+
     R_D = D[:, random_index_list]
     R_L = L[random_index_list]
 
@@ -95,6 +96,16 @@ def mvg_models(D, L):
 
 
 def train_mvg_models(DTR, LTR, DTE, model_type):
+    """_summary_
+    Args:
+        DTR (_type_): Training data
+        LTR (_type_): Labels of training data
+        DTE (_type_): Evaluation data 
+        model_type (_type_): type of MVG model=> "Full", "Naive", "Tied", "Tied-Naive". default type is "Full" 
+
+    Returns:
+        _type_: returns llr or log-likelihood ratios
+    """    
     model_parameters = {}
 
     # Compute model parameters for each class
@@ -125,7 +136,7 @@ def train_mvg_models(DTR, LTR, DTE, model_type):
 def mvg_evaluation(Train_D, Train_L, Evaluation_D, Evaluation_L, model_type):
     llr, LR = train_mvg_models(Train_D, Train_L, Evaluation_D, model_type)
     LP = (llr > 0)*1
-    C_MVG_S = train_logistic_regression(misc.vrow(llr), LP, misc.vrow(llr), 10**-5, 0.5, True)
+    C_MVG_S = train_logistic_regression(misc.make_row_shape(llr), LP, misc.make_row_shape(llr), 10**-5, 0.5, True)
 
     for app in [0.5, 0.1, 0.9]:
         print(f"{app} {model_type} minDCF:", compute_min_DCF(llr, Evaluation_L, app, 1, 1))
@@ -148,6 +159,7 @@ if __name__ == "__main__":
     
     Train_D = D[:, 0:8929]
     EEavluation_D = D[:, 8929:]
-
-    mvg_evaluation(Train_D, Train_L, EEavluation_D, Evaluation_L, "Tied")
-    # mvg_models(Train_D, Train_L)
+    
+    K=5
+    # mvg_evaluation(Train_D, Train_L, EEavluation_D, Evaluation_L, "Tied")
+    mvg_models(Train_D, Train_L, K)

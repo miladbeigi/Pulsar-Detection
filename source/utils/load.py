@@ -1,8 +1,8 @@
 import numpy
 import matplotlib
 import matplotlib.pyplot as plt
-from misc import mcol
-import constants
+from misc.misc import make_column_shape
+import misc.constants as constants
 
 
 def get_labels(name):
@@ -21,7 +21,7 @@ def open_file(file_name):
         for line in f:
             try:
                 attrs = line.split(',')[0:8]
-                attrs = mcol(numpy.array([float(i) for i in attrs]))
+                attrs = make_column_shape(numpy.array([float(i) for i in attrs]))
                 name = line.split(',')[-1].strip()
                 label = get_labels(name)
                 DList.append(attrs)

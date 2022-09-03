@@ -39,14 +39,14 @@ def GMM_EM(X, gmm, model_type):
         for g in range(G):
             gamma = P[g, :]
             Z = gamma.sum()
-            F = (misc.vrow(gamma) * X).sum(1)
-            S = np.dot(X, (misc.vrow(gamma)*X).T)
+            F = (misc.make_row_shape(gamma) * X).sum(1)
+            S = np.dot(X, (misc.make_row_shape(gamma)*X).T)
             w = Z/N
-            mu = misc.mcol(F/Z)
+            mu = misc.make_column_shape(F/Z)
             Sigma = S/Z - np.dot(mu, mu.T)
             U, s, _ = np.linalg.svd(Sigma)
             s[s<0.5] = 0.5
-            Sigma = np.dot(U, misc.mcol(s)*U.T)
+            Sigma = np.dot(U, misc.make_column_shape(s)*U.T)
             if model_type == 'naive':
                 Sigma = Sigma * np.eye(Sigma.shape[0])
             if model_type == 'tied':
@@ -74,8 +74,8 @@ def init_GMM(DTR, N, gmm = []):
     new_GMM = []
     
     if gmm == []:
-        mu = misc.empirical_mean(DTR)
-        C = misc.cov(DTR)
+        mu = misc.compute_mean(DTR)
+        C = misc.compute_covariance(DTR)
         U, s, Vh = np.linalg.svd(C)
         d = U[:, 0:1] * s[0]**0.5 * 0.1
         new_GMM = [(1/N, mu-d, C) , (1/N, mu+d, C)]

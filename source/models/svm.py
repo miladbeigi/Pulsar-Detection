@@ -18,24 +18,24 @@ def train_SVM(DTR, LTR, DTE, LTE, Weighted_C_list, gamma, C=1, K=0, kernel_type=
 
     # Radial Basis Function
     if kernel_type == "rbf":
-        Dist = misc.mcol((DTR**2).sum(0)) + \
-            misc.vrow((DTR**2).sum(0)) - 2*np.dot(DTR.T, DTR)
+        Dist = misc.make_column_shape((DTR**2).sum(0)) + \
+            misc.make_row_shape((DTR**2).sum(0)) - 2*np.dot(DTR.T, DTR)
         kernel = np.exp(-gamma*Dist) + K
-        H = misc.mcol(Z)*misc.vrow(Z)*kernel
+        H = misc.make_column_shape(Z)*misc.make_row_shape(Z)*kernel
 
     else:
         DTREXT = np.vstack([DTR, np.ones((1, DTR.shape[1]))])
         H = np.dot(DTREXT.T, DTREXT)
-        H = misc.mcol(Z) * misc.vrow(Z) * H
+        H = misc.make_column_shape(Z) * misc.make_row_shape(Z) * H
 
     def JPrimal(w):
-        S = np.dot(misc.vrow(w), DTREXT)
+        S = np.dot(misc.make_row_shape(w), DTREXT)
         loss = np.maximum(np.zeros(S.shape), 1 - Z*S).sum()
         return -0.5*np.linalg.norm(w)**2 + C*loss
 
     def JDual(alpha):
-        Ha = np.dot(H, misc.mcol(alpha))
-        aHa = np.dot(misc.vrow(alpha), Ha)
+        Ha = np.dot(H, misc.make_column_shape(alpha))
+        aHa = np.dot(misc.make_row_shape(alpha), Ha)
         a1 = alpha.sum()
 
         return -0.5 * aHa.ravel() + a1, -Ha.ravel() + np.ones(alpha.size)
@@ -71,7 +71,7 @@ def train_SVM(DTR, LTR, DTE, LTE, Weighted_C_list, gamma, C=1, K=0, kernel_type=
         err = evaluation_SVM(STE, LTE)
 
     else:
-        wStar = np.dot(DTREXT, misc.mcol(alphaStar) * misc.mcol(Z))
+        wStar = np.dot(DTREXT, misc.make_column_shape(alphaStar) * misc.make_column_shape(Z))
         w = wStar[0:DTR.shape[0]]
         b = wStar[-1]
         STE = np.dot(w.T, DTE) + b
@@ -87,7 +87,7 @@ def train_SVM(DTR, LTR, DTE, LTE, Weighted_C_list, gamma, C=1, K=0, kernel_type=
     return STE
 
 
-def svm_model(D, L, applications, K, C_list, G_list, prior, rebalanced, kernel_type=None):
+def svm_model(D, L, applications, K, C_list, prior, rebalanced, kernel_type=None):
 
     np.random.seed(seed=0)
     random_index_list = np.random.permutation(D.shape[1])
@@ -100,42 +100,40 @@ def svm_model(D, L, applications, K, C_list, G_list, prior, rebalanced, kernel_t
         'labels': []
     }
     minDCF = {}
-    
-    for gamma in G_list:
-        minDCF[gamma] = []
-    
-    for gamma in G_list:
-        for C in C_list:
-            K_scores['labels'] = []
-            K_scores['scores'] = []
-            for train_index, test_index in kf.split(R_D.T):
+    for app in applications:
+        minDCF[app] = []
 
-                DTR = R_D[:, train_index]
-                LTR = R_L[train_index]
+    for C in C_list:
+        K_scores['labels'] = []
+        K_scores['scores'] = []
+        for train_index, test_index in kf.split(R_D.T):
 
-                DTE = R_D[:, test_index]
-                LTE = R_L[test_index]
+            DTR = R_D[:, train_index]
+            LTR = R_L[train_index]
 
-                Weighted_C_list = compute_weights(LTR, prior, C, rebalanced)
+            DTE = R_D[:, test_index]
+            LTE = R_L[test_index]
 
-                STE = train_SVM(
-                    DTR, LTR, DTE, LTE, Weighted_C_list, gamma, C=C, K=0, kernel_type=kernel_type)
+            Weighted_C_list = compute_weights(LTR, prior, C, rebalanced)
 
-                K_scores['labels'].append(LTE)
-                K_scores['scores'].append(STE)
+            STE = train_SVM(
+                DTR, LTR, DTE, LTE, Weighted_C_list, gamma=0.001, C=C, K=0, kernel_type=kernel_type)
 
-            STE = np.hstack(K_scores['scores'])
-            LTE = np.hstack(K_scores['labels'])
+            K_scores['labels'].append(LTE)
+            K_scores['scores'].append(STE)
 
-            for app in applications:
-                _minDCF = compute_min_DCF(STE, LTE, app, 1, 1)
-                print(f"prior={prior}, app={app}, C={C}, gamma={gamma}, MinDCF: ", _minDCF)
-                minDCF[gamma].append(_minDCF)
+        STE = np.hstack(K_scores['scores'])
+        LTE = np.hstack(K_scores['labels'])
+
+        for app in applications:
+            _minDCF = compute_min_DCF(STE, LTE, app, 1, 1)
+            print(f"prior={prior}, app={app}, C={C}, MinDCF: ", _minDCF)
+            minDCF[app].append(_minDCF)
 
     plt.figure()
 
-    for gamma in G_list:
-        plt.plot(C_list, np.array(minDCF[gamma]), label=f'gamma={gamma}')
+    for app in applications:
+        plt.plot(C_list, np.array(minDCF[app]), label=f'minDCF(π={app})')
 
     plt.xscale('log')
     plt.xlabel('C')
@@ -163,21 +161,45 @@ def compute_weights(LTR, prior, C, rebalanced):
     return Weighted_C_list
 
 
+def svm_evaluation(DTR, LTR, DTE, LTE, gamma, prior, imbalanced, C=1, K=0, kernel_type=None):
+
+    Weighted_C_list = compute_weights(LTR, prior, C, rebalanced)
+
+    STE = train_SVM(DTR, LTR, DTE, LTE, Weighted_C_list,
+                    gamma, C=1, K=0, kernel_type=None)
+
+    for app in [0.1, 0.5, 0.9]:
+        _minDCF = compute_min_DCF(STE, LTE, app, 1, 1)
+        print(f"prior={prior}, app={app}, C={C}, MinDCF: ", _minDCF)
+
+
 if __name__ == '__main__':
 
-    D, L = load_data()
+    Train_D, Train_L = load_data('Train')
+    Evaluation_D, Evaluation_L = load_data('Test')
 
-    D = D[:, 0:2000]
-    L = L[0:2000]
+    D = np.concatenate([Train_D, Evaluation_D], axis=1)
 
-    rebalanced = False
-    C_list = [10**-2, 10**-1, 1, 10, 100, 1000]
-    # C_list = [1000]
+    # Using gaussianized data
+    # D = gaussianization(D)
 
-    G_list = [10**-3, 10**-2, 10**-1]
-    applications = [0.5]
+    # Using PCA
+    # D = calculate_pca(D, 7)
+
+    Train_D = D[:, 0:8929]
+    Evaluation_D = D[:, 8929:]
+
+    rebalanced = True
+
+    # C_list = [10**-2, 10**-1, 1, 10, 100]
+    C_list = [100]
+
+    applications = [0.5, 0.1, 0.9]
     K = 3
     prior = 0.5
 
-    svm_model(D, L, applications, K, C_list, G_list,
-              prior, rebalanced, kernel_type="rbf")
+    # svm_model(Train_D, Train_L, applications, K, C_list,
+    #           prior, rebalanced, kernel_type="rbf")
+    C = 0.1
+    svm_evaluation(Train_D, Train_L, Evaluation_D,
+                   Evaluation_L, 0.001, 0.5, True, C, 0, None)
