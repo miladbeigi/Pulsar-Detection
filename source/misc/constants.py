@@ -10,3 +10,7 @@ hFea = {
         6: 'Excess kurtosis of the DM-SNR curve.',
         7: 'Skewness of the DM-SNR curve.'
     }
+
+CLASS_LABELS = [0, 1]
+
+MVG_CLASS_PRIORS = [0.5 , 0.5]

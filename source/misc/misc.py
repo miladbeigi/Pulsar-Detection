@@ -37,6 +37,12 @@ def compute_within_class_covariance(D: np.ndarray, L: np.ndarray):
         SW += (L == i).sum() * compute_covariance(D[:, L == i])
     return SW/D.shape[1]
 
+def shuffle_data(D, L):
+    random_index_list = generate_shuffled_indexes(D.shape[1])
+    Random_Data = D[:, random_index_list]
+    Random_Labels = L[random_index_list]
+    return Random_Data, Random_Labels
+
 
 def generate_shuffled_indexes(shape: int, seed: int = 0):
     np.random.seed(seed)

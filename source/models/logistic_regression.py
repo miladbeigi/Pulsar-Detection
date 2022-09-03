@@ -62,9 +62,7 @@ def train_logistic_regression(DTR, LTR, DTE, l, prior, imbalanced: bool):
 def logistic_regression(D, L, applications, K, l_list, prior, imbalanced, options={"m_pca": None, "quadratic": False, "gaussianize": False, "figures": False}):
 
     # Shuffle data
-    random_index_list = misc.generate_shuffled_indexes(D.shape[1])
-    R_Data = D[:, random_index_list]
-    R_Label = L[random_index_list]
+    Random_Data, Random_Labels = misc.shuffle_data(D, L)
 
     K_scores = {
         'scores': [],
@@ -81,10 +79,10 @@ def logistic_regression(D, L, applications, K, l_list, prior, imbalanced, option
         K_scores['scores'] = []
         for train_index, test_index in misc.k_fold(K, D.shape[1]):
 
-            DTR = R_Data[:, train_index]
-            LTR = R_Label[train_index]
-            DTE = R_Data[:, test_index]
-            LTE = R_Label[test_index]
+            DTR = Random_Data[:, train_index]
+            LTR = Random_Labels[train_index]
+            DTE = Random_Data[:, test_index]
+            LTE = Random_Labels[test_index]
 
             if options["gaussianize"]:
                 DTR, DTE = features_gaussianization(DTR, DTE)
@@ -109,7 +107,7 @@ def logistic_regression(D, L, applications, K, l_list, prior, imbalanced, option
             _minDCF = compute_min_DCF(STE, LTE, app, 1, 1)
             print(f"prior={prior}, app={app}, lambda={l}, MinDCF: ", _minDCF)
             minDCF[app].append(_minDCF)
-    
+
     if options["figures"]:
         plt.figure()
         for app in applications:
