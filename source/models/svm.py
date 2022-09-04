@@ -70,7 +70,8 @@ def train_SVM(DTR, LTR, DTE, LTE, Weighted_C_list, gamma, C, K=0, kernel_type=No
         DTEEx = np.vstack([DTE, np.ones(DTE.shape[1]) * K])
         wStar = np.dot(DTREXT, misc.make_column_shape(
             alphaStar) * misc.make_column_shape(Z))
-        STE = np.dot(alphaStar.T, DTEEx)
+        STE = np.dot(wStar.T, DTEEx)
+        STE = STE.reshape((STE.shape[1]))
         err = evaluation_SVM(STE, LTE)
         print("Primal Loss: ", JPrimal(wStar))
         print("Duality Gap: ", JPrimal(wStar) - JDual(alphaStar)[0])
@@ -82,7 +83,7 @@ def train_SVM(DTR, LTR, DTE, LTE, Weighted_C_list, gamma, C, K=0, kernel_type=No
     return STE
 
 
-def svm_model(D, L, applications, K, C_list, gamma, prior, imbalanced_data, options={"m_pca": None, "gaussianize": False, "kernel_type": None}):
+def svm_model(D, L, applications, K, C_list, gamma, prior, imbalanced_data, options={"m_pca": None, "gaussianize": False, "figures": False, "kernel_type": None}):
 
     # Shuffle data
     Random_Data, Random_Labels = misc.shuffle_data(D, L)
@@ -118,7 +119,7 @@ def svm_model(D, L, applications, K, C_list, gamma, prior, imbalanced_data, opti
 
             STE = train_SVM(
                 DTR, LTR, DTE, LTE, Weighted_C_list, gamma, C, K=constants.SVM_K, kernel_type=options["kernel_type"])
-
+            
             K_scores['labels'].append(LTE)
             K_scores['scores'].append(STE)
 

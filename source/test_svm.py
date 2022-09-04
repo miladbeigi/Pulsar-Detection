@@ -23,7 +23,7 @@ if __name__ == "__main__":
         "m_pca": None,
         "gaussianize": False,
         "figures": False,
-        "kernel_type": None
+        "kernel_type": "rbf"
     }
 
 
