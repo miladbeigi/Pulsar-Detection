@@ -19,3 +19,5 @@ SVM_K = 0
 FMIN_L_BFGS_B_factr=0.0
 FMIN_L_BFGS_B_maxiter=100000
 FMIN_L_BFGS_B_maxfun=100000
+
+GMM_PSI=0.01

@@ -15,14 +15,14 @@ if __name__ == "__main__":
     imbalanced_data = True
     prior = 0.5
     
-    number_of_components = 8
+    number_of_components = 4
     model_type = "full"
     
     options = {
         "m_pca": None,
         "gaussianize": False,
         "figures": True,
-        "model_type": "full"
+        "model_type": "naive-tied"
     }
 
     gmm_model(Train_Data, Train_Labels, applications, K, number_of_components, options)
