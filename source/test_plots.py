@@ -14,21 +14,4 @@ if __name__ == '__main__':
     Train_Data = features_gaussianization(Train_Data)
     Evaluation_Data, Evaluation_Labels = load_data('Test')
     
-    # plot_data(Train_Data, Train_Labels)
- 
-    # MVG    
-    
-    # model_type = "Tied"
-    # MVG_Scores = train_mvg_models(Train_Data, Train_Labels, Evaluation_Data, model_type)
-    
-    # Predicted_Labels = assign_labels(MVG_Scores, 0.5, 1, 1)
-    
-    # Calibrate_MVG_Scores = train_logistic_regression(misc.make_row_shape(MVG_Scores), Evaluation_Labels, misc.make_row_shape(MVG_Scores), 10**-5, 0.5, False)
-
-    # LR    
-    scores = train_logistic_regression(Train_Data, Train_Labels, Evaluation_Data, 10**-5, 0.5, True)
-    lg_scores = misc.make_row_shape(scores)
-    LP = (scores > 0) * 1
-    calibrated_scores = train_logistic_regression(lg_scores, LP, lg_scores, 10**-5, 0.5, True)
-
-    bayes_plot(scores, calibrated_scores, Evaluation_Labels)
+    plot_data(Train_Data, Train_Labels)
