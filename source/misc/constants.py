@@ -1,4 +1,6 @@
-PWD = "/Users/milad/Library/Mobile Documents/com~apple~CloudDocs/ML/Project/Pulsar"
+import os
+
+PWD = os.getcwdb().decode()
 
 hFea = {
         0: 'Mean of the integrated profile.',

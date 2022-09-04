@@ -52,7 +52,9 @@ def train_logistic_regression(DTR, LTR, DTE, l, prior, imbalanced: bool):
 
     _w = _v[0:DTR.shape[0]]
     _b = _v[-1]
-
+    
+    print(DTR[:, LTR == 1].shape[1], DTR[:, LTR == 0].shape[1])
+    
     STE = np.dot(_w.T, DTE) + _b - \
         np.log(DTR[:, LTR == 1].shape[1]/DTR[:, LTR == 0].shape[1])
 

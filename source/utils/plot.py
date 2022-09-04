@@ -1,9 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from load import load_data
-import constants
-import gaussianize
+import misc.constants as constants
+from utils.model_evaluation import bayes_error_plot
 
 
 def plot_correlation(D):
@@ -19,10 +18,6 @@ def plot_correlation(D):
 
 
 def plot_hist(D, L):
-    """This function does 
-    @D 
-    @L
-    """
 
     D0 = D[:, L == 0]
     D1 = D[:, L == 1]
@@ -72,44 +67,48 @@ def plot_scatter(D, L):
 
 
 def plot_data(D, L):
+
     # Change default font size - comment to use default values
     plt.rc('font', size=12)
     plt.rc('xtick', labelsize=16)
     plt.rc('ytick', labelsize=16)
 
     plot_hist(D, L)
-    # plot_scatter(D, L)
-    # plot_correlation(D)
+    plot_scatter(D, L)
+    plot_correlation(D)
+
 
 def roc_curve(scores, labels):
     thresholds = np.array(scores)
     thresholds.sort()
-    
+
     thresholds = thresholds[400:2500]
-    
+
     FPR = np.zeros(thresholds.size)
     FNR = np.zeros(thresholds.size)
 
-    for idx , t in enumerate(thresholds):
+    for idx, t in enumerate(thresholds):
         Pred = np.int32(scores > t)
-        Conf = np.zeros((2,2))
+        Conf = np.zeros((2, 2))
         for i in range(2):
             for j in range(2):
-                Conf[i, j] = ((Pred==i) * (labels==j)).sum()
-        FNR[idx] = Conf[0,1] / Conf[1,1] + Conf[0,1]
-        FPR[idx] = Conf[1,1] / Conf[1,0] + Conf[0,0]
+                Conf[i, j] = ((Pred == i) * (labels == j)).sum()
+        FNR[idx] = Conf[0, 1] / Conf[1, 1] + Conf[0, 1]
+        FPR[idx] = Conf[1, 1] / Conf[1, 0] + Conf[0, 0]
 
     return ((FPR/labels.shape[0])*100, (FNR/labels.shape[0])*100)
 
-def plot():
-    D, L = load_data()
 
-    # Using gaussianized data
-    # D = gaussianize.gaussianization(D.T)
-    # D = D.T
-    D = gaussianize.gaussianization(D)
-    plot_data(D, L)
+def bayes_plot(scores, calibrated_scores, Evaluation_Labels):
+    
+    fig, ax = plt.subplots()
+    P = np.linspace(-3, 3, 1000)
+    
+    plt.plot(P, bayes_error_plot(P, scores, Evaluation_Labels, minCost=False), color='r', label='actDCF')
+    plt.plot(P, bayes_error_plot(P, scores, Evaluation_Labels, minCost=True), dashes=[6,2], color='r', label='minDCF')
+    plt.plot(P, bayes_error_plot(P, calibrated_scores, Evaluation_Labels, minCost=False), dashes=[1,2], color='r', label="actDCF (Calibrated scores)")
 
-
-if __name__ == '__main__':
-    plot()
+    plt.ylabel('DCF')
+    plt.ylim((0, 1.2))
+    plt.legend()
+    plt.show()

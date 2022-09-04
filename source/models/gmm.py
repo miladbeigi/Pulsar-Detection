@@ -3,6 +3,7 @@ import numpy as np
 import scipy.special
 import misc.misc as misc
 from utils.model_evaluation import compute_min_DCF
+import misc.constants as constants
 from pre_processing.pca_lda import calculate_pca
 from pre_processing.gaussianize import features_gaussianization
 
@@ -33,7 +34,7 @@ def train_gmm(DTR, LTR, DTE, number_of_components , model_type):
     gmm_classes = {}
     ll_c = np.zeros((2, DTE.shape[1]))
 
-    for label in [0, 1]:
+    for label in constants.CLASS_LABELS:
         gmm_classes[label] = GMM_LBG(DTR[:, LTR == label], number_of_components, model_type)
         ll_c[label, :] = _GMM_ll_per_sample(DTE, gmm_classes[label])
 
@@ -80,7 +81,7 @@ def _GMM_EM(X, gmm, model_type):
     G = len(gmm)
     N = X.shape[1]
     
-    psi = 0.01
+    psi = constants.GMM_PSI
     
     while ll_old is None or ll_new-ll_old>1e-6:
         ll_old = ll_new

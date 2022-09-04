@@ -1,6 +1,4 @@
 import numpy
-import matplotlib
-import matplotlib.pyplot as plt
 from misc.misc import make_column_shape
 import misc.constants as constants
 
@@ -34,7 +32,3 @@ def open_file(file_name):
 def load_data(filename='Train'):
     D, L = open_file(f'{constants.PWD}/data/{filename}.txt')
     return D, L
-
-
-if __name__ == '__main__':
-    load_data()

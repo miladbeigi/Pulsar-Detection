@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.stats import norm
 
-def features_gaussianization(DTR, DTE):
+def features_gaussianization(DTR, DTE=None):
     rankDTR = np.zeros(DTR.shape)
     for i in range(DTR.shape[0]):
         for j in range(DTR.shape[1]):

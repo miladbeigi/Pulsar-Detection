@@ -1,8 +1,5 @@
 import numpy
-import matplotlib
-import matplotlib.pyplot as plt
 from sklearn import preprocessing
-from utils.load import load_data
 from misc.misc import make_column_shape
 
 
@@ -31,22 +28,3 @@ def calculate_pca(D, m):
     # project the data
     DP = numpy.dot(P.T, D)
     return DP, P
-
-def show_pca(D, L):
-    D0 = D[:, L == 0]
-    D1 = D[:, L == 1]
-
-    plt.scatter(D0[0, :], D0[1, :], label='PCA-1')
-    plt.scatter(D1[0, :], D1[1, :], label='PCA-2')
-
-    plt.show()
-
-
-def PCA_LDA():
-    D, L = load_data()
-    D = normalize_data(D)
-    DP = calculate_pca(D)
-    show_pca(DP, L)
-
-if __name__ == '__main__':
-    PCA_LDA()
