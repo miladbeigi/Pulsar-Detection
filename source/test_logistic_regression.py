@@ -23,7 +23,7 @@ if __name__ == "__main__":
                         K, lambda_list, prior, imbalanced, options)
 
 
-    # Evaluation
+    # Sample Score Callibration and Evaluation
     Evaluation_Data, Evaluation_Labels = load_data('Test')
     
     lg_evaluation(Train_Data, Train_Labels, Evaluation_Data,

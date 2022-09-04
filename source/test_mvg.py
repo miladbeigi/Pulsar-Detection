@@ -1,5 +1,6 @@
 from utils.load import load_data
 from models.multivariate_gaussian import mvg_models, mvg_evaluation
+import misc.misc as misc
 
 if __name__ == "__main__":
 
@@ -18,7 +19,8 @@ if __name__ == "__main__":
 
     mvg_models(Train_Data, Train_Labels, applications, K, options)
 
-    # Evaluation
+    # Sample Score Callibration and Evaluation
     Evaluation_Data, Evaluation_Labels = load_data('Test')
+
     mvg_evaluation(Train_Data, Train_Labels, Evaluation_Data,
                    Evaluation_Labels, "Tied", applications)
