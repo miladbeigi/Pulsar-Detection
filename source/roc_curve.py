@@ -1,20 +1,14 @@
 import matplotlib.pyplot as plt
-import numpy as np
-import misc
-from pca_lda import calculate_pca, normalize_data
-import pylab
-from gaussianize import gaussianization
-from scipy import special
-from load import load_data
-from model_evaluation import compute_min_DCF, compute_act_DCF, bayes_error_plot
-from multivariate_gaussian import train_mvg_models
-from logistic_regression import train_logistic_regression, quadratic
-from plot import roc_curve
+import misc.misc as misc
+from utils.load import load_data
+from models.multivariate_gaussian import train_mvg_models
+from models.logistic_regression import train_logistic_regression
+from utils.plot import roc_curve
 
 
 if __name__ == '__main__':
 
-    D, L = load_data()
+    D, L = load_data('Train')
     
     (DTR, LTR), (DTE, LTE) = misc.split_db_2to1(D, L, 0)
     
