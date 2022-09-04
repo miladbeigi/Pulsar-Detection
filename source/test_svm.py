@@ -9,7 +9,7 @@ if __name__ == "__main__":
 
     # Define Applications
     applications = [0.5, 0.1, 0.9]
-    K = 5
+    K = 3
 
     # Test SVM    
     imbalanced_data = True
@@ -23,7 +23,7 @@ if __name__ == "__main__":
         "m_pca": None,
         "gaussianize": False,
         "figures": False,
-        "kernel_type": "rbf"
+        "kernel_type": None
     }
 
 

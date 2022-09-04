@@ -1,12 +1,12 @@
+from cmath import rect
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.special._logsumexp
-import misc
-import load
-from model_evaluation import compute_min_DCF
-from multivariate_gaussian import logpdf_GAU_ND_simplified
-from pca_lda import calculate_pca, normalize_data
-from gaussianize import gaussianization
+import misc.misc as misc
+from utils.model_evaluation import compute_min_DCF
+from models.multivariate_gaussian import logpdf_GAU_ND_simplified
+from pre_processing.pca_lda import calculate_pca
+from pre_processing.gaussianize import features_gaussianization
 
 
 def GEM_ll_perSample(X, gmm):
@@ -45,21 +45,29 @@ def GMM_EM(X, gmm, model_type):
             mu = misc.make_column_shape(F/Z)
             Sigma = S/Z - np.dot(mu, mu.T)
             U, s, _ = np.linalg.svd(Sigma)
-            s[s<0.5] = 0.5
+            
+            # check this
+            s[s < 0.5] = 0.5
             Sigma = np.dot(U, misc.make_column_shape(s)*U.T)
+            
             if model_type == 'naive':
                 Sigma = Sigma * np.eye(Sigma.shape[0])
+            
             if model_type == 'tied':
                 Sigma = Sigma * Z
+            
             gmmNew.append((w, mu, Sigma))
-        if model_type == 'full' or model_type=='naive':
+        
+        if model_type == 'full' or model_type == 'naive':
             gmm = gmmNew
+        
         if model_type == 'navie-tied':
             gmm = []
             newSigma = sum([gmmNew[x][2] for x in range(G)])/G
             newSigma = newSigma * Z
             for g in range(G):
                 gmm.append((gmmNew[g][0], gmmNew[g][1], newSigma))
+        
         if model_type == 'tied':
             gmm = []
             newSigma = sum([gmmNew[x][2] for x in range(G)])/G
@@ -70,29 +78,27 @@ def GMM_EM(X, gmm, model_type):
     return gmm
 
 
-def init_GMM(DTR, N, gmm = []):
+def init_GMM(DTR, N, gmm=[]):
     new_GMM = []
-    
+
     if gmm == []:
         mu = misc.compute_mean(DTR)
         C = misc.compute_covariance(DTR)
         U, s, Vh = np.linalg.svd(C)
         d = U[:, 0:1] * s[0]**0.5 * 0.1
-        new_GMM = [(1/N, mu-d, C) , (1/N, mu+d, C)]
+        new_GMM = [(1/N, mu-d, C), (1/N, mu+d, C)]
         return new_GMM
     else:
         for each_gmm in gmm:
             U, s, Vh = np.linalg.svd(each_gmm[2])
             d = U[:, 0:1] * s[0]**0.5 * 0.1
-            temp_gmm = [(1/N, each_gmm[1]+d, each_gmm[2]) , (1/N, each_gmm[1]-d, each_gmm[2])]
+            temp_gmm = [(1/N, each_gmm[1]+d, each_gmm[2]),
+                        (1/N, each_gmm[1]-d, each_gmm[2])]
             new_GMM += temp_gmm
         return new_GMM
-    
-    
-    
 
 
-def train_mmg(DTR, LTR, DTE, gmm, model_type):
+def train_gmm(DTR, LTR, DTE, gmm, model_type):
 
     gmm_classes = {}
     llr_c = np.zeros((2, DTE.shape[1]))
@@ -106,15 +112,10 @@ def train_mmg(DTR, LTR, DTE, gmm, model_type):
     return llr
 
 
-def mmg_model(D, L, applications, K, N_C_target, model_type):
+def gmm_model(D, L, applications, K, target_number_of_components, options):
 
-    # K-Fold
-    kf = misc.k_fold(K)
-    # Permutation
-    np.random.seed(seed=0)
-    random_index_list = np.random.permutation(D.shape[1])
-    R_D = D[:, random_index_list]
-    R_L = L[random_index_list]
+   # Shuffle data
+    Random_Data, Random_Labels = misc.shuffle_data(D, L)
 
     K_scores = {
         'scores': [],
@@ -125,72 +126,75 @@ def mmg_model(D, L, applications, K, N_C_target, model_type):
 
     for app in applications:
         minDCF[app] = []
-    
-    N_C = 2
-    gmm = init_GMM(R_D, N_C, [])
 
-    while N_C <= N_C_target:
+    number_of_components = 2
+    gmm = init_GMM(Random_Data, number_of_components, [])
+
+    while number_of_components <= target_number_of_components:
+
         K_scores['labels'] = []
         K_scores['scores'] = []
-        if N_C != 2:
-            gmm = init_GMM(DTR, N_C, gmm)
-        for train_index, test_index in kf.split(D.T):
 
-            DTR = R_D[:, train_index]
-            LTR = R_L[train_index]
-            DTE = R_D[:, test_index]
-            LTE = R_L[test_index]
+        if number_of_components != 2:
+            # check this
+            gmm = init_GMM(DTR, number_of_components, gmm)
 
-            llr = train_mmg(DTR, LTR, DTE, gmm, 'full')
+        for train_index, test_index in misc.k_fold(K, D.shape[1]):
+
+            DTR = Random_Data[:, train_index]
+            LTR = Random_Labels[train_index]
+            DTE = Random_Data[:, test_index]
+            LTE = Random_Labels[test_index]
+
+            if options["gaussianize"]:
+                DTR, DTE = features_gaussianization(DTR, DTE)
+
+            if options["m_pca"]:
+                DTR, P = calculate_pca(DTR, options["m_pca"])
+                DTE = np.dot(P.T, DTE)
+
+            llr = train_gmm(DTR, LTR, DTE, gmm, options["model_type"])
 
             K_scores['scores'].append(llr)
             K_scores['labels'].append(LTE)
+
         STE = np.hstack(K_scores['scores'])
         LTE = np.hstack(K_scores['labels'])
+
         for app in applications:
             _minDCF = compute_min_DCF(STE, LTE, app, 1, 1)
-            print(f"app={app}, {model_type} cov, number of components={N_C}:", _minDCF )
+            print(
+                f"app={app}, {options['model_type']} cov, number of components={number_of_components}:", _minDCF)
             minDCF[app].append(_minDCF)
-        
-        gmm = GMM_EM(R_D, gmm, model_type)
-        N_C *= 2
+
+        gmm = GMM_EM(Random_Data, gmm, options["model_type"])
+        number_of_components *= 2
+        # End of While loop
+
+    if options["figures"]:
+
+        number_of_components = 2
+        out = [
+            2**j for j in range(1, int(np.log2(target_number_of_components))+1)]
+
+        x = np.arange(len(out))  # the label locations
+        width = 0.20  # the width of the bars
+
+        fig, ax = plt.subplots()
     
-    N_C = 2
-    out = [ 2**j for j in range(1, int(np.log2(N_C_target))+1) ]
+        rects1 = ax.bar(x - width, minDCF[0.5], width, label=f'minDCF(π=0.5)')
+        rects2 = ax.bar(x, minDCF[0.1], width, label=f'minDCF(π=0.1)')
+        rects3 = ax.bar(x + width, minDCF[0.9], width, label=f'minDCF(π=0.9)')
 
+        ax.bar_label(rects1, padding=3)
+        ax.bar_label(rects2, padding=3)
+        ax.bar_label(rects3, padding=3)
 
-    x = np.arange(len(out))  # the label locations
-    width = 0.20  # the width of the bars
+        # Add some text for labels, title and custom x-axis tick labels, etc.
+        fig.tight_layout()
+        ax.set_ylabel('minDCF')
+        ax.set_title('minDCF for different number of components')
+        ax.set_xticks(x, out)
+        ax.legend()
 
-    fig, ax = plt.subplots()
-    rects1 = ax.bar(x - width, minDCF[0.5], width, label=f'minDCF(π=0.5)')
-    rects2 = ax.bar(x, minDCF[0.1], width, label=f'minDCF(π=0.1)')
-    rects3 = ax.bar(x + width, minDCF[0.9], width, label=f'minDCF(π=0.9)')
-
-    # Add some text for labels, title and custom x-axis tick labels, etc.
-    ax.set_ylabel('minDCF')
-    ax.set_title('minDCF for different number of components')
-    ax.set_xticks(x, out)
-    ax.legend()
-
-    ax.bar_label(rects1, padding=3)
-    ax.bar_label(rects2, padding=3)
-    ax.bar_label(rects3, padding=3)
-
-    fig.tight_layout()
-
-    plt.show()
-
-
-if __name__ == "__main__":
-    D, L = load.load_data()
-
-    ## Using gaussianized data
-    # D = gaussianization(D.T).T
-
-    applications = [0.5, 0.1, 0.9]
-    K = 3
-    N_C_target = 32
-    model_type = "full"
-    
-    mmg_model(D, L, applications, K, N_C_target, model_type)
+        plt.show()
