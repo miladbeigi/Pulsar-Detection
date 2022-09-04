@@ -9,7 +9,7 @@ from load import load_data
 from model_evaluation import compute_min_DCF, compute_act_DCF, bayes_error_plot
 from multivariate_gaussian import train_mvg_models
 from logistic_regression import train_logistic_regression, quadratic
-from plot import roc_curve
+from plot import compute_roc_curve
 
 
 if __name__ == '__main__':

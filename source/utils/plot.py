@@ -78,7 +78,7 @@ def plot_data(D, L):
     plot_correlation(D)
 
 
-def roc_curve(scores, labels):
+def compute_roc_curve(scores, labels):
     thresholds = np.array(scores)
     thresholds.sort()
 
@@ -99,7 +99,7 @@ def roc_curve(scores, labels):
     return ((FPR/labels.shape[0])*100, (FNR/labels.shape[0])*100)
 
 
-def bayes_plot(scores, calibrated_scores, Evaluation_Labels):
+def compute_bayes_plot(scores, calibrated_scores, Evaluation_Labels):
     
     fig, ax = plt.subplots()
     P = np.linspace(-3, 3, 1000)
