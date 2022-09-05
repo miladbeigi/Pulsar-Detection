@@ -1,5 +1,4 @@
 import numpy
-from sklearn import preprocessing
 from misc.misc import make_column_shape
 
 
@@ -9,9 +8,6 @@ def get_labels(name):
         '1': 1
     }
     return hLabels[name]
-
-def normalize_data(D):
-    return preprocessing.normalize(D, axis=1, norm='l1')
 
 def calculate_pca(D, m):
     # calculate and reshape the mean
