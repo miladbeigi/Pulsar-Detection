@@ -97,18 +97,3 @@ def compute_roc_curve(scores, labels):
         FPR[idx] = Conf[1, 1] / Conf[1, 0] + Conf[0, 0]
 
     return ((FPR/labels.shape[0])*100, (FNR/labels.shape[0])*100)
-
-
-def compute_bayes_plot(scores, calibrated_scores, Evaluation_Labels):
-    
-    fig, ax = plt.subplots()
-    P = np.linspace(-3, 3, 1000)
-    
-    plt.plot(P, bayes_error_plot(P, scores, Evaluation_Labels, minCost=False), color='r', label='actDCF')
-    plt.plot(P, bayes_error_plot(P, scores, Evaluation_Labels, minCost=True), dashes=[6,2], color='r', label='minDCF')
-    plt.plot(P, bayes_error_plot(P, calibrated_scores, Evaluation_Labels, minCost=False), dashes=[1,2], color='r', label="actDCF (Calibrated scores)")
-
-    plt.ylabel('DCF')
-    plt.ylim((0, 1.2))
-    plt.legend()
-    plt.show()

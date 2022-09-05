@@ -1,6 +1,6 @@
 from utils.load import load_data
 from pre_processing.gaussianize import features_gaussianization
-from utils.plot import plot_data, compute_bayes_plot
+from utils.plot import plot_data
 from models.multivariate_gaussian import train_mvg_models
 from models.logistic_regression import train_logistic_regression
 import misc.misc as misc
